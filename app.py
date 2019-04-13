@@ -3,6 +3,7 @@ from flask import render_template
 from pymongo import MongoClient
 import json
 from flask import  request
+import pprint
 
 from bson import json_util
 from bson.json_util import dumps
@@ -30,14 +31,40 @@ def dashboard_projects():
     return render_template("index.php", geojson_data = projects)
 
 
+
 @app.route("/test", methods=['GET', 'POST'])
 def get_data():
     global ss_list # Make it accessible from other function
     if request.method == 'POST':
         ss = json.loads(request.data)
         ss = json.loads(ss['data'])
-        ss_list = [ss['lng'], ss['lat']]
-        print(ss_list)
+        click = [ss['lng'], ss['lat']]
+        print(click)
+
+        pipeline = [
+            {'$geoNear': {
+                'near': {'type': "Point", 'coordinates': click},
+                'distanceField': "dist.calculated",
+                'maxDistance': 500,
+                'includeLocs': "dist.location",
+                'key': 'features.geometry.coordinates',
+                'uniqueDocs': False,
+                'spherical': True}},
+            {"$unwind": "$features"},
+            {"$redact": {
+                "$cond": {
+                    "if": {"$eq": [{"$cmp": ["$features.geometry.coordinates", "$dist.location"]}, 0]},
+                    "then": "$$KEEP",
+                    "else": "$$PRUNE"
+                }
+            }
+            }
+        ]
+
+        connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+        collection = connection[DBS_NAME][COLLECTION_NAME]
+        pprint.pprint(list(collection.aggregate(pipeline)))
+        connection.close()
 
         return 'OK'
 
