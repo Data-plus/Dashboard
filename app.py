@@ -1,8 +1,10 @@
 from flask import Flask
 from flask import render_template
+from flask import  request
+
 from pymongo import MongoClient
 import json
-from flask import  request
+from bson import ObjectId
 import pprint
 
 from bson import json_util
@@ -26,10 +28,10 @@ FIELDS = "FeatureCollection"
 def dashboard_projects():
     connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
     collection = connection[DBS_NAME][COLLECTION_NAME]
-    projects = collection.find_one({"type": "FeatureCollection"}, {"_id":0})
+    projects = collection.find_one( { "_id": ObjectId("5ca63a65122b9a6192720138") }, {"_id":0})
+    sensors = collection.find_one( { "_id": ObjectId("5cbb067ae39a5cbeb4a82260") }, {"_id":0})
     connection.close()
-    return render_template("index.php", geojson_data = projects)
-
+    return render_template("test-1.php", geojson_data = projects, sensors = sensors)
 
 
 @app.route("/test", methods=['GET', 'POST'])
